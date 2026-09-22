@@ -1,7 +1,14 @@
-import app from './app.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Carrega o único .env localizado na raiz do projeto
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+import app from './app.js';
 
 const PORT = process.env.PORT || 3000;
 

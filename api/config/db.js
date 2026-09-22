@@ -1,7 +1,21 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dns from 'dns';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Carrega o único .env localizado na raiz do projeto
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+// Configura servidores DNS públicos para evitar o erro "querySrv ECONNREFUSED" no Windows/roteadores locais ao conectar ao MongoDB Atlas
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+} catch (e) {
+  // Fallback silencioso caso o ambiente restrinja alteração de DNS
+}
 
 /**
  * Padrão de conexão em cache para ambientes Serverless (como Vercel).

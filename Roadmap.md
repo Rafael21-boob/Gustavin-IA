@@ -29,7 +29,7 @@ Controle de execução e progresso das etapas de desenvolvimento do projeto.
 
 ## 📌 Fase 3: Frontend (React com Vite)
 - [x] Inicializar projeto React com Vite no diretório `/frontend`.
-- [x] Configurar variáveis de ambiente (`.env.example` e `.env` com `VITE_API_URL`).
+- [x] Configurar variáveis de ambiente unificadas em 1 único `.env` na raiz (`.env.example` e `.env` com suporte a Backend e Frontend via Vite `envDir`).
 - [x] Criar módulo de integração HTTP/API (`src/services/api.js`).
 - [x] Criar componente de Card de Carro (`CarCard.jsx`) exibindo foto, marca, modelo e preço formatado (`R$`).
 - [x] Criar componente de Formulário de Cadastro (`CarFormModal.jsx`) com validações e feedback de sucesso/erro.

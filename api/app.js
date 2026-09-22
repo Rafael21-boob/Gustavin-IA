@@ -34,7 +34,7 @@ app.use('/api/cars', carRoutes);
 app.use('/cars', carRoutes);
 
 // Rota raiz amigável
-app.get('/', (req, res) => {
+const rootHandler = (req, res) => {
   res.json({
     message: 'API do Gerenciador de Carros Serverless',
     docs: '/api.md',
@@ -43,7 +43,10 @@ app.get('/', (req, res) => {
       cars: '/api/cars',
     },
   });
-});
+};
+
+app.get('/', rootHandler);
+app.get('/api', rootHandler);
 
 // Middleware para rotas não encontradas (404)
 app.use((req, res, next) => {

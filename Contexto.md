@@ -53,6 +53,12 @@ O projeto é um sistema web escalável de controle de pátio e garagem de veícu
 - `lucide-react`: Ícones de relógio, carro, cálculo e status.
 - `vite`: Compilador e dev server ultrarrápido.
 
+### 3.1 Variáveis de Ambiente & Arquitetura de Configuração
+- **Arquivo Único `.env` na Raiz:** Toda a configuração da aplicação (Backend e Frontend) está centralizada em apenas 1 arquivo `.env` na raiz do projeto.
+- **Integração Vite (`envDir`):** O frontend lê as variáveis de ambiente diretamente da raiz através de `envDir: path.resolve(__dirname, '..')` em `frontend/vite.config.js` (variáveis com prefixo `VITE_`, como `VITE_API_URL`).
+- **Backend Resiliente:** `api/index.js` e `api/config/db.js` carregam o `.env` da raiz via `dotenv.config({ path: ... })` independentemente do diretório de execução.
+- **Segurança & Versionamento:** `.gitignore` protege o `.env` local e `.env.example` serve como template versionado.
+
 ---
 
 ## 4. Estado Atual do Sistema
