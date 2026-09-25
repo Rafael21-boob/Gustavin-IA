@@ -51,9 +51,31 @@ Controle de execução e progresso das etapas de desenvolvimento do projeto.
 ---
 
 ## 📌 Fase 5: Regra de Negócio de Garagem / Estacionamento
-- [x] Atualizar Schema e Model Mongoose (`Car.js`) com `horas`, `valorTotal` e cálculo de R$ 5,00/h.
+- [x] Atualizar Schema e Model Mongoose (`Car.js`) com `horas`, `valorTotal` e cálculo de permanência.
 - [x] Atualizar Controller (`carController.js`) com validação de horas e cálculo do valor total.
 - [x] Atualizar formulário no frontend (`CarFormModal.jsx`) com input de horas e cálculo em tempo real.
 - [x] Atualizar exibição nos cards (`CarCard.jsx`) exibindo tempo acumulado em horas e valor total do estacionamento.
 - [x] Atualizar documentação técnica (`api.md`), `Contexto.md` e suíte de testes (`scripts/test-api.js`).
 - [x] Executar testes automatizados e validar build do frontend.
+
+---
+
+## 📌 Fase 6: Edição de Veículos & Reajuste da Tarifa (R$ 11,80/h)
+- [x] Atualizar tarifa de permanência de R$ 5,00/h para **R$ 11,80/h** no Backend (`Car.js`, `carController.js`, mock cars).
+- [x] Atualizar cálculo dinâmico da tarifa para R$ 11,80/h no Frontend (`CarFormModal.jsx`, `CarCard.jsx`, `App.jsx`, `App.css`).
+- [x] Implementar fluxo completo de **Edição de Veículos**:
+  - [x] Botão de "Editar" nos cards de veículo (`CarCard.jsx`) com ícone e estilo harmonioso.
+  - [x] Modal adaptativo (`CarFormModal.jsx`) com preenchimento automático dos dados do veículo selecionado e recálculo da tarifa em tempo real.
+  - [x] Integração com API `PUT /api/cars/:id` via `services/api.js` e atualização reativa de estado em `App.jsx`.
+- [x] Atualizar suíte de testes automatizados (`scripts/test-api.js`) com os novos valores baseados em R$ 11,80/h.
+- [x] Atualizar documentações técnicas (`Contexto.md`, `api.md`, `Roadmap.md`).
+
+---
+
+## 📌 Fase 7: Upload de Fotos do Computador (Explorador de Arquivos & Base64)
+- [x] Configurar Express para aceitar payloads de até 15MB (`express.json({ limit: '15mb' })`) em `api/app.js`.
+- [x] Implementar seletor de arquivos do computador com área de arrastar e soltar (*drag & drop*) em `CarFormModal.jsx`.
+- [x] Adicionar conversão e compressão inteligente em Canvas no navegador (redimensionamento para 1280px e qualidade JPEG 0.85).
+- [x] Manter suporte híbrido opcional para links da web através de abas no modal.
+- [x] Adicionar tratamento resiliente de URI do MongoDB Atlas (`hasValidMongoUri`) prevenindo falhas de inicialização com placeholders.
+- [x] Validar suíte de testes (9/9) e build de produção do frontend.

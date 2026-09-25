@@ -5,7 +5,7 @@ Esta documentação detalha os endpoints da API REST Serverless desenvolvida par
 - **Base URL (Local):** `http://localhost:3000/api`
 - **Base URL (Vercel):** `https://<seu-projeto>.vercel.app/api`
 - **Headers Padrão:** `Content-Type: application/json`
-- **Tarifa Base do Estacionamento:** **R$ 5,00 por hora** ($\text{Valor Total} = \text{horas} \times 5$).
+- **Tarifa Base do Estacionamento:** **R$ 11,80 por hora** ($\text{Valor Total} = \text{horas} \times 11,80$).
 
 ---
 
@@ -16,7 +16,7 @@ Esta documentação detalha os endpoints da API REST Serverless desenvolvida par
 | `marca` | String | Sim | Montadora do veículo (ex: "Toyota", "Ford") |
 | `modelo` | String | Sim | Modelo do veículo (ex: "Corolla Altis", "Mustang Mach 1") |
 | `horas` | Number | Sim | Tempo de permanência na garagem em horas (ex: `3`) |
-| `valorTotal` | Number | Automático | Valor total cobrado em R$ calculado via $\text{horas} \times 5$ (ex: `15.0`) |
+| `valorTotal` | Number | Automático | Valor total cobrado em R$ calculado via $\text{horas} \times 11,80$ (ex: `35.40`) |
 | `preco` | Number | Compatibilidade | Alias sincronizado com `valorTotal` |
 | `foto` | String | Sim | URL pública da imagem do veículo |
 | `createdAt` | Date | Automático | Data/hora de entrada na garagem |
@@ -56,8 +56,8 @@ Esta documentação detalha os endpoints da API REST Serverless desenvolvida par
       "marca": "Porsche",
       "modelo": "911 Carrera S",
       "horas": 3,
-      "valorTotal": 15,
-      "preco": 15,
+      "valorTotal": 35.4,
+      "preco": 35.4,
       "foto": "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=800&q=80",
       "createdAt": "2026-09-22T10:00:00.000Z",
       "updatedAt": "2026-09-22T10:00:00.000Z"
@@ -73,7 +73,7 @@ Esta documentação detalha os endpoints da API REST Serverless desenvolvida par
 
 ### 2.3 Registrar Entrada de Veículo (Cadastro)
 - **Rota:** `POST /cars` (ou `POST /api/cars`)
-- **Descrição:** Registra a entrada de um veículo informando o tempo previsto de permanência. A API calcula automaticamente o `valorTotal = horas * 5`.
+- **Descrição:** Registra a entrada de um veículo informando o tempo previsto de permanência. A API calcula automaticamente o `valorTotal = horas * 11.80`.
 - **Headers:** `Content-Type: application/json`
 - **Corpo da Requisição (`JSON`):**
   ```json
@@ -91,8 +91,8 @@ Esta documentação detalha os endpoints da API REST Serverless desenvolvida par
     "marca": "Honda",
     "modelo": "Civic Touring",
     "horas": 4,
-    "valorTotal": 20,
-    "preco": 20,
+    "valorTotal": 47.2,
+    "preco": 47.2,
     "foto": "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&w=800&q=80",
     "createdAt": "2026-09-22T10:05:00.000Z",
     "updatedAt": "2026-09-22T10:05:00.000Z"
@@ -129,8 +129,8 @@ Esta documentação detalha os endpoints da API REST Serverless desenvolvida par
     "marca": "Porsche",
     "modelo": "911 Carrera S",
     "horas": 3,
-    "valorTotal": 15,
-    "preco": 15,
+    "valorTotal": 35.4,
+    "preco": 35.4,
     "foto": "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=800&q=80",
     "createdAt": "2026-09-22T10:00:00.000Z",
     "updatedAt": "2026-09-22T10:00:00.000Z"
@@ -143,9 +143,9 @@ Esta documentação detalha os endpoints da API REST Serverless desenvolvida par
 
 ---
 
-### 2.5 Atualizar Tempo de Permanência por ID
+### 2.5 Atualizar Dados e Tempo de Permanência por ID
 - **Rota:** `PUT /cars/:id` (ou `PUT /api/cars/:id`)
-- **Descrição:** Atualiza as horas de permanência ou dados do veículo, recalculando o valor total de acordo com a tarifa de R$ 5,00/h.
+- **Descrição:** Atualiza as horas de permanência ou dados do veículo, recalculando o valor total de acordo com a tarifa de R$ 11,80/h.
 - **Parâmetros de Rota:** `id` (ObjectId do MongoDB)
 - **Corpo da Requisição (`JSON`):**
   ```json
@@ -160,8 +160,8 @@ Esta documentação detalha os endpoints da API REST Serverless desenvolvida par
     "marca": "Porsche",
     "modelo": "911 Carrera S",
     "horas": 6,
-    "valorTotal": 30,
-    "preco": 30,
+    "valorTotal": 70.8,
+    "preco": 70.8,
     "foto": "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=800&q=80",
     "createdAt": "2026-09-22T10:00:00.000Z",
     "updatedAt": "2026-09-22T12:00:00.000Z"

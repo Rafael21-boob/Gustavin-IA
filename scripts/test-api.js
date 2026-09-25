@@ -72,7 +72,7 @@ async function runTests() {
       `Status: ${listRes.status}`
     );
 
-    // 3. Cadastro com Sucesso (POST /api/cars) e Cálculo de Tarifa (horas * 5)
+    // 3. Cadastro com Sucesso (POST /api/cars) e Cálculo de Tarifa (horas * 11.80)
     console.log('\n▶ Testando Cadastro de Novo Carro na Garagem:');
     const newCarPayload = {
       marca: 'Ferrari',
@@ -90,9 +90,9 @@ async function runTests() {
       createRes.body._id && 
       createRes.body.marca === 'Ferrari' && 
       createRes.body.horas === 3 &&
-      createRes.body.valorTotal === 15; // 3h * R$ 5,00 = R$ 15,00
+      createRes.body.valorTotal === 35.4; // 3h * R$ 11,80 = R$ 35,40
 
-    logTest('POST /api/cars deve criar registro e calcular valorTotal = horas * 5 (3h = R$ 15,00)', 
+    logTest('POST /api/cars deve criar registro e calcular valorTotal = horas * 11.80 (3h = R$ 35,40)', 
       isCreated, 
       `Status: ${createRes.status}, valorTotal: ${createRes.body?.valorTotal}`
     );
@@ -131,7 +131,7 @@ async function runTests() {
     if (createdCarId) {
       const updatePayload = {
         modelo: 'SF90 Spider Assetto Fiorano',
-        horas: 5, // Aumenta para 5 horas -> 5 * 5 = 25
+        horas: 5, // Aumenta para 5 horas -> 5 * 11.80 = 59.00
       };
       const putRes = await request(`/cars/${createdCarId}`, {
         method: 'PUT',
@@ -140,9 +140,9 @@ async function runTests() {
 
       const isUpdated = putRes.status === 200 && 
         putRes.body.horas === 5 && 
-        putRes.body.valorTotal === 25; // 5h * 5 = R$ 25,00
+        putRes.body.valorTotal === 59; // 5h * 11.80 = R$ 59,00
 
-      logTest('PUT /api/cars/:id deve recalcular valorTotal ao alterar horas (5h = R$ 25,00)',
+      logTest('PUT /api/cars/:id deve recalcular valorTotal ao alterar horas (5h = R$ 59,00)',
         isUpdated,
         `Status: ${putRes.status}, valorTotal: ${putRes.body?.valorTotal}`
       );
