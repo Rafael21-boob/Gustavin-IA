@@ -1,8 +1,22 @@
-import React, { useState, useMemo } from 'react';
-import { X, Check, Car, Clock, Image as ImageIcon, Sparkles, AlertCircle, Calculator } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { 
+  X, 
+  Check, 
+  Car, 
+  Clock, 
+  Image as ImageIcon, 
+  Sparkles, 
+  AlertCircle, 
+  Calculator, 
+  UploadCloud, 
+  FolderOpen, 
+  Link2, 
+  RotateCcw,
+  CheckCircle2
+} from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 
-const TARIFA_POR_HORA = 5.0; // Tarifa fixa de R$ 5,00 por hora
+const TARIFA_POR_HORA = 11.80; // Tarifa fixa de R$ 11,80 por hora
 
 const PRESET_CARS = [
   {
@@ -25,7 +39,7 @@ const PRESET_CARS = [
   },
 ];
 
-export default function CarFormModal({ isOpen, onClose, onSubmit }) {
+export default function CarFormModal({ isOpen, onClose, onSubmit, carToEdit = null }) {
   const [formData, setFormData] = useState({
     marca: '',
     modelo: '',
@@ -36,12 +50,49 @@ export default function CarFormModal({ isOpen, onClose, onSubmit }) {
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
+  
+  // Controle de upload de imagem
+  const [photoSourceMode, setPhotoSourceMode] = useState('file'); // 'file' ou 'url'
+  const [selectedFileName, setSelectedFileName] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const fileInputRef = useRef(null);
 
-  // Cálculo automático em tempo real: Horas * R$ 5,00
+  // Sincroniza formulário com o veículo sendo editado ou limpa para novo cadastro
+  useEffect(() => {
+    if (isOpen) {
+      if (carToEdit) {
+        setFormData({
+          marca: carToEdit.marca || '',
+          modelo: carToEdit.modelo || '',
+          horas: carToEdit.horas !== undefined ? String(carToEdit.horas) : '',
+          foto: carToEdit.foto || '',
+        });
+        setSelectedFileName(carToEdit.foto?.startsWith('data:') ? 'Imagem do veículo' : '');
+        setPhotoSourceMode(carToEdit.foto?.startsWith('data:') ? 'file' : (carToEdit.foto ? 'url' : 'file'));
+      } else {
+        setFormData({
+          marca: '',
+          modelo: '',
+          horas: '',
+          foto: '',
+        });
+        setSelectedFileName('');
+        setPhotoSourceMode('file');
+      }
+      setFormErrors({});
+      setServerError('');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [carToEdit, isOpen]);
+
+  // Cálculo automático em tempo real: Horas * R$ 11,80
   const valorTotalCalculado = useMemo(() => {
     const horasNum = Number(formData.horas);
     if (isNaN(horasNum) || horasNum < 0) return 0;
-    return horasNum * TARIFA_POR_HORA;
+    return Number((horasNum * TARIFA_POR_HORA).toFixed(2));
   }, [formData.horas]);
 
   if (!isOpen) return null;
@@ -54,6 +105,122 @@ export default function CarFormModal({ isOpen, onClose, onSubmit }) {
     }
   };
 
+  /**
+   * Processa o arquivo selecionado e otimiza via Canvas para Base64 leve
+   */
+  const processImageFile = (file) => {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setFormErrors((prev) => ({
+        ...prev,
+        foto: 'Por favor, selecione um arquivo de imagem válido (JPG, PNG, WEBP).',
+      }));
+      return;
+    }
+
+    // Limite de 15MB para o arquivo original
+    if (file.size > 15 * 1024 * 1024) {
+      setFormErrors((prev) => ({
+        ...prev,
+        foto: 'O arquivo selecionado é muito grande. Escolha uma imagem de até 15MB.',
+      }));
+      return;
+    }
+
+    setIsProcessingImage(true);
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Redimensiona inteligentemente para no máximo 1280px de largura/altura
+        const maxDimension = 1280;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Converte para JPEG com qualidade 0.85 (altíssima fidelidade com ~100-200kb)
+        const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+        setFormData((prev) => ({ ...prev, foto: optimizedDataUrl }));
+        setSelectedFileName(file.name);
+        setFormErrors((prev) => ({ ...prev, foto: '' }));
+        setIsProcessingImage(false);
+      };
+
+      img.onerror = () => {
+        setIsProcessingImage(false);
+        setFormErrors((prev) => ({
+          ...prev,
+          foto: 'Não foi possível ler a imagem selecionada. Tente outro arquivo.',
+        }));
+      };
+
+      img.src = event.target.result;
+    };
+
+    reader.onerror = () => {
+      setIsProcessingImage(false);
+      setFormErrors((prev) => ({
+        ...prev,
+        foto: 'Erro ao carregar o arquivo do explorador.',
+      }));
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileInputChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setFormData((prev) => ({ ...prev, foto: '' }));
+    setSelectedFileName('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleApplyPreset = (preset) => {
     setFormData({
       marca: preset.marca,
@@ -61,6 +228,8 @@ export default function CarFormModal({ isOpen, onClose, onSubmit }) {
       horas: preset.horas.toString(),
       foto: preset.foto,
     });
+    setSelectedFileName('');
+    setPhotoSourceMode('url');
     setFormErrors({});
   };
 
@@ -71,10 +240,14 @@ export default function CarFormModal({ isOpen, onClose, onSubmit }) {
     if (!formData.horas || isNaN(Number(formData.horas)) || Number(formData.horas) <= 0) {
       errors.horas = 'Informe um tempo em horas válido (mínimo 1 hora).';
     }
-    if (!formData.foto.trim()) {
-      errors.foto = 'A URL da foto é obrigatória.';
-    } else if (!formData.foto.startsWith('http://') && !formData.foto.startsWith('https://')) {
-      errors.foto = 'A URL da foto deve iniciar com http:// ou https://';
+    if (!formData.foto || !formData.foto.trim()) {
+      errors.foto = 'Selecione uma foto do seu computador ou informe o link da imagem.';
+    } else if (
+      !formData.foto.startsWith('data:image/') &&
+      !formData.foto.startsWith('http://') &&
+      !formData.foto.startsWith('https://')
+    ) {
+      errors.foto = 'Formato de imagem inválido. Escolha um arquivo válido ou uma URL iniciando com http/https.';
     }
     return errors;
   };
@@ -92,12 +265,13 @@ export default function CarFormModal({ isOpen, onClose, onSubmit }) {
     try {
       setIsSubmitting(true);
       const horasNum = Number(formData.horas);
+      const total = Number((horasNum * TARIFA_POR_HORA).toFixed(2));
       await onSubmit({
         marca: formData.marca.trim(),
         modelo: formData.modelo.trim(),
         horas: horasNum,
-        valorTotal: horasNum * TARIFA_POR_HORA,
-        preco: horasNum * TARIFA_POR_HORA,
+        valorTotal: total,
+        preco: total,
         foto: formData.foto.trim(),
       });
       // Limpa formulário e fecha o modal
@@ -105,7 +279,7 @@ export default function CarFormModal({ isOpen, onClose, onSubmit }) {
       setFormErrors({});
       onClose();
     } catch (err) {
-      setServerError(err.message || 'Erro ao cadastrar veículo na garagem.');
+      setServerError(err.message || (carToEdit ? 'Erro ao salvar alterações no veículo.' : 'Erro ao cadastrar veículo na garagem.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -122,8 +296,14 @@ export default function CarFormModal({ isOpen, onClose, onSubmit }) {
       >
         <div className="modal-header">
           <div>
-            <h2 id="modal-title" className="modal-title">Entrada de Veículo na Garagem</h2>
-            <p className="modal-subtitle">Registre o veículo e o tempo previsto de permanência</p>
+            <h2 id="modal-title" className="modal-title">
+              {carToEdit ? 'Editar Veículo no Pátio' : 'Entrada de Veículo na Garagem'}
+            </h2>
+            <p className="modal-subtitle">
+              {carToEdit 
+                ? 'Atualize os dados e o tempo de permanência do veículo' 
+                : 'Registre o veículo e o tempo previsto de permanência'}
+            </p>
           </div>
           <button 
             type="button" 
@@ -135,24 +315,26 @@ export default function CarFormModal({ isOpen, onClose, onSubmit }) {
           </button>
         </div>
 
-        {/* Presets Rápidos */}
-        <div className="presets-container">
-          <span className="presets-label">
-            <Sparkles size={14} /> Exemplos rápidos de entrada:
-          </span>
-          <div className="presets-buttons">
-            {PRESET_CARS.map((preset, idx) => (
-              <button
-                key={idx}
-                type="button"
-                className="btn-preset"
-                onClick={() => handleApplyPreset(preset)}
-              >
-                {preset.marca} {preset.modelo} ({preset.horas}h)
-              </button>
-            ))}
+        {/* Presets Rápidos (apenas para novo cadastro) */}
+        {!carToEdit && (
+          <div className="presets-container">
+            <span className="presets-label">
+              <Sparkles size={14} /> Exemplos rápidos de entrada:
+            </span>
+            <div className="presets-buttons">
+              {PRESET_CARS.map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className="btn-preset"
+                  onClick={() => handleApplyPreset(preset)}
+                >
+                  {preset.marca} {preset.modelo} ({preset.horas}h)
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {serverError && (
           <div className="alert-error">
@@ -229,7 +411,7 @@ export default function CarFormModal({ isOpen, onClose, onSubmit }) {
             <div className="pricing-calc-header">
               <Calculator size={16} className="pricing-calc-icon" />
               <span className="pricing-calc-title">Cálculo de Tarifa do Estacionamento</span>
-              <span className="pricing-rate-badge">R$ 5,00 / hora</span>
+              <span className="pricing-rate-badge">R$ 11,80 / hora</span>
             </div>
             <div className="pricing-calc-body">
               <div className="pricing-formula">
@@ -237,55 +419,170 @@ export default function CarFormModal({ isOpen, onClose, onSubmit }) {
                   {formData.horas ? `${formData.horas} hora${Number(formData.horas) > 1 ? 's' : ''}` : '0 horas'}
                 </span>
                 <span className="calc-operator">&times;</span>
-                <span className="calc-rate">R$ 5,00</span>
+                <span className="calc-rate">R$ 11,80</span>
                 <span className="calc-equals">=</span>
                 <span className="calc-result">
                   {formatCurrency(valorTotalCalculado)}
                 </span>
               </div>
               <p className="pricing-note">
-                O valor total é recalculado automaticamente com base na tarifa fixa da garagem.
+                O valor total é recalculado automaticamente com base na tarifa fixa da garagem (R$ 11,80/h).
               </p>
             </div>
           </div>
 
           <div className="form-group">
-            <label htmlFor="foto" className="form-label">
-              URL da Foto do Veículo <span className="required">*</span>
-            </label>
-            <div className="input-with-icon">
-              <ImageIcon size={16} className="input-icon" />
-              <input
-                id="foto"
-                name="foto"
-                type="url"
-                placeholder="https://exemplo.com/foto-do-carro.jpg"
-                value={formData.foto}
-                onChange={handleChange}
-                className={`form-input ${formErrors.foto ? 'input-error' : ''}`}
-                disabled={isSubmitting}
-              />
+            <div className="photo-label-row">
+              <label className="form-label">
+                Foto do Veículo <span className="required">*</span>
+              </label>
+              <div className="photo-mode-toggle">
+                <button
+                  type="button"
+                  className={`btn-mode-tab ${photoSourceMode === 'file' ? 'active' : ''}`}
+                  onClick={() => setPhotoSourceMode('file')}
+                  title="Carregar imagem do seu computador"
+                >
+                  <FolderOpen size={13} />
+                  <span>Meu Computador</span>
+                </button>
+                <button
+                  type="button"
+                  className={`btn-mode-tab ${photoSourceMode === 'url' ? 'active' : ''}`}
+                  onClick={() => setPhotoSourceMode('url')}
+                  title="Usar link da internet"
+                >
+                  <Link2 size={13} />
+                  <span>Link da Web</span>
+                </button>
+              </div>
             </div>
-            {formErrors.foto && <span className="field-error">{formErrors.foto}</span>}
-          </div>
 
-          {/* Pré-visualização da Imagem */}
-          {formData.foto && (
-            <div className="image-preview-container">
-              <span className="preview-label">Pré-visualização:</span>
-              <img
-                src={formData.foto}
-                alt="Prévia do veículo"
-                className="image-preview"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-                onLoad={(e) => {
-                  e.target.style.display = 'block';
-                }}
-              />
-            </div>
-          )}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/png, image/jpeg, image/jpg, image/webp"
+              onChange={handleFileInputChange}
+              style={{ display: 'none' }}
+              id="car-file-input"
+            />
+
+            {photoSourceMode === 'file' ? (
+              <>
+                {formData.foto ? (
+                  <div className="selected-photo-card">
+                    <img
+                      src={formData.foto}
+                      alt="Prévia do veículo selecionado"
+                      className="selected-photo-preview"
+                    />
+                    <div className="selected-photo-details">
+                      <div className="selected-photo-status">
+                        <CheckCircle2 size={16} className="status-icon-check" />
+                        <span className="selected-photo-name" title={selectedFileName || 'Imagem carregada'}>
+                          {selectedFileName || 'Foto pronta para salvar'}
+                        </span>
+                      </div>
+                      <p className="selected-photo-hint">Imagem otimizada para o banco de dados</p>
+                      <div className="selected-photo-actions">
+                        <button
+                          type="button"
+                          className="btn-change-photo"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isSubmitting || isProcessingImage}
+                        >
+                          <FolderOpen size={14} />
+                          <span>Trocar Foto</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-remove-photo"
+                          onClick={handleRemovePhoto}
+                          disabled={isSubmitting}
+                        >
+                          <RotateCcw size={14} />
+                          <span>Remover</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`upload-dropzone ${isDragging ? 'dragging' : ''} ${isProcessingImage ? 'processing' : ''}`}
+                    onClick={() => !isProcessingImage && fileInputRef.current?.click()}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                  >
+                    {isProcessingImage ? (
+                      <div className="upload-processing">
+                        <span className="spinner-small"></span>
+                        <span>Otimizando imagem para o banco...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="upload-icon-circle">
+                          <UploadCloud size={24} />
+                        </div>
+                        <div className="upload-text-group">
+                          <span className="upload-main-text">
+                            Clique para escolher do seu computador
+                          </span>
+                          <span className="upload-sub-text">
+                            ou arraste e solte o arquivo aqui
+                          </span>
+                        </div>
+                        <span className="upload-formats-hint">
+                          PNG, JPG, JPEG ou WEBP (até 15MB)
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="input-with-icon">
+                <Link2 size={16} className="input-icon" />
+                <input
+                  id="foto"
+                  name="foto"
+                  type="url"
+                  placeholder="https://exemplo.com/foto-do-carro.jpg"
+                  value={formData.foto}
+                  onChange={handleChange}
+                  className={`form-input ${formErrors.foto ? 'input-error' : ''}`}
+                  disabled={isSubmitting}
+                />
+              </div>
+            )}
+
+            {formErrors.foto && <span className="field-error">{formErrors.foto}</span>}
+
+            {/* Pré-visualização quando em modo Link Web */}
+            {photoSourceMode === 'url' && formData.foto && (
+              <div className="image-preview-container">
+                <span className="preview-label">Pré-visualização do Link:</span>
+                <img
+                  src={formData.foto}
+                  alt="Prévia do veículo"
+                  className="image-preview"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                  onLoad={(e) => {
+                    e.target.style.display = 'block';
+                  }}
+                />
+              </div>
+            )}
+          </div>
 
           <div className="modal-actions">
             <button
@@ -305,12 +602,16 @@ export default function CarFormModal({ isOpen, onClose, onSubmit }) {
               {isSubmitting ? (
                 <>
                   <span className="spinner-small"></span>
-                  <span>Registrando...</span>
+                  <span>{carToEdit ? 'Salvando...' : 'Registrando...'}</span>
                 </>
               ) : (
                 <>
                   <Check size={18} />
-                  <span>Registrar Entrada ({formatCurrency(valorTotalCalculado)})</span>
+                  <span>
+                    {carToEdit
+                      ? `Salvar Alterações (${formatCurrency(valorTotalCalculado)})`
+                      : `Registrar Entrada (${formatCurrency(valorTotalCalculado)})`}
+                  </span>
                 </>
               )}
             </button>

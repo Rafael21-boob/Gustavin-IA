@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { Trash2, Calendar, Tag, ImageOff, Clock, CircleDollarSign } from 'lucide-react';
+import { Trash2, Calendar, Tag, ImageOff, Clock, CircleDollarSign, Pencil } from 'lucide-react';
 
-export default function CarCard({ car, onDelete }) {
+const TARIFA_HORA = 11.80; // Tarifa fixa R$ 11,80/h
+
+export default function CarCard({ car, onDelete, onEdit }) {
   const [imageError, setImageError] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -17,9 +19,9 @@ export default function CarCard({ car, onDelete }) {
     }
   };
 
-  // Garante exibição correta das horas e do valor total
-  const horasPermanencia = car.horas !== undefined ? car.horas : (car.preco ? Number(car.preco) / 5 : 0);
-  const valorTotalEstacionamento = car.valorTotal !== undefined ? car.valorTotal : (car.preco !== undefined ? car.preco : horasPermanencia * 5);
+  // Garante exibição correta das horas e do valor total com a tarifa atual
+  const horasPermanencia = car.horas !== undefined ? car.horas : (car.preco ? Number((Number(car.preco) / TARIFA_HORA).toFixed(2)) : 0);
+  const valorTotalEstacionamento = car.valorTotal !== undefined ? car.valorTotal : (car.preco !== undefined ? car.preco : Number((horasPermanencia * TARIFA_HORA).toFixed(2)));
 
   return (
     <article className="car-card">
@@ -68,7 +70,7 @@ export default function CarCard({ car, onDelete }) {
           </div>
           <div className="parking-stat-item">
             <span className="parking-stat-label">Tarifa Fixa</span>
-            <span className="parking-stat-rate">R$ 5,00/h</span>
+            <span className="parking-stat-rate">R$ 11,80/h</span>
           </div>
         </div>
 
@@ -86,17 +88,30 @@ export default function CarCard({ car, onDelete }) {
             <span>{formatDate(car.createdAt) || 'Hoje'}</span>
           </div>
 
-          <button
-            type="button"
-            className="btn-delete"
-            onClick={handleDelete}
-            disabled={isDeleting}
-            title="Dar saída no veículo"
-            aria-label="Dar saída no veículo"
-          >
-            <Trash2 size={16} />
-            <span>{isDeleting ? 'Liberando...' : 'Dar Saída'}</span>
-          </button>
+          <div className="car-card-actions">
+            <button
+              type="button"
+              className="btn-edit"
+              onClick={() => onEdit(car)}
+              title="Editar dados do veículo"
+              aria-label="Editar dados do veículo"
+            >
+              <Pencil size={15} />
+              <span>Editar</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn-delete"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              title="Dar saída no veículo"
+              aria-label="Dar saída no veículo"
+            >
+              <Trash2 size={15} />
+              <span>{isDeleting ? 'Liberando...' : 'Dar Saída'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </article>

@@ -5,7 +5,7 @@ import CarFormModal from './components/CarFormModal';
 import LoadingState from './components/States/LoadingState';
 import ErrorState from './components/States/ErrorState';
 import EmptyState from './components/States/EmptyState';
-import { getCars, createCar, deleteCar, checkHealth } from './services/api';
+import { getCars, createCar, updateCar, deleteCar, checkHealth } from './services/api';
 import { Search, SlidersHorizontal, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import './App.css';
 
@@ -15,6 +15,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [apiStatus, setApiStatus] = useState({ status: 'checking' });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCar, setEditingCar] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('recent'); // 'recent', 'price-asc', 'price-desc', 'hours-desc'
   const [toast, setToast] = useState(null);
@@ -48,10 +49,31 @@ export default function App() {
     loadData();
   }, []);
 
-  const handleCreateCar = async (carData) => {
-    const created = await createCar(carData);
-    setCars((prev) => [created, ...prev]);
-    showToast('success', `Veículo "${created.marca} ${created.modelo}" registrado no pátio com sucesso!`);
+  const handleOpenCreateModal = () => {
+    setEditingCar(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (car) => {
+    setEditingCar(car);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingCar(null);
+  };
+
+  const handleSaveCar = async (carData) => {
+    if (editingCar) {
+      const updated = await updateCar(editingCar._id, carData);
+      setCars((prev) => prev.map((car) => (car._id === updated._id ? updated : car)));
+      showToast('success', `Veículo "${updated.marca} ${updated.modelo}" atualizado com sucesso!`);
+    } else {
+      const created = await createCar(carData);
+      setCars((prev) => [created, ...prev]);
+      showToast('success', `Veículo "${created.marca} ${created.modelo}" registrado no pátio com sucesso!`);
+    }
   };
 
   const handleDeleteCar = async (id) => {
@@ -76,14 +98,14 @@ export default function App() {
 
     if (sortBy === 'price-asc') {
       result.sort((a, b) => {
-        const valA = a.valorTotal !== undefined ? a.valorTotal : (a.horas ? a.horas * 5 : a.preco);
-        const valB = b.valorTotal !== undefined ? b.valorTotal : (b.horas ? b.horas * 5 : b.preco);
+        const valA = a.valorTotal !== undefined ? a.valorTotal : (a.horas ? a.horas * 11.80 : a.preco);
+        const valB = b.valorTotal !== undefined ? b.valorTotal : (b.horas ? b.horas * 11.80 : b.preco);
         return Number(valA) - Number(valB);
       });
     } else if (sortBy === 'price-desc') {
       result.sort((a, b) => {
-        const valA = a.valorTotal !== undefined ? a.valorTotal : (a.horas ? a.horas * 5 : a.preco);
-        const valB = b.valorTotal !== undefined ? b.valorTotal : (b.horas ? b.horas * 5 : b.preco);
+        const valA = a.valorTotal !== undefined ? a.valorTotal : (a.horas ? a.horas * 11.80 : a.preco);
+        const valB = b.valorTotal !== undefined ? b.valorTotal : (b.horas ? b.horas * 11.80 : b.preco);
         return Number(valB) - Number(valA);
       });
     } else if (sortBy === 'hours-desc') {
@@ -108,7 +130,7 @@ export default function App() {
 
       {/* Header Principal */}
       <Navbar
-        onOpenNewModal={() => setIsModalOpen(true)}
+        onOpenNewModal={handleOpenCreateModal}
         totalCars={cars.length}
         apiStatus={apiStatus}
       />
@@ -175,7 +197,7 @@ export default function App() {
           )}
 
           {!isLoading && !error && cars.length === 0 && (
-            <EmptyState onOpenNewModal={() => setIsModalOpen(true)} />
+            <EmptyState onOpenNewModal={handleOpenCreateModal} />
           )}
 
           {!isLoading && !error && cars.length > 0 && filteredAndSortedCars.length === 0 && (
@@ -198,6 +220,7 @@ export default function App() {
                   key={car._id}
                   car={car}
                   onDelete={handleDeleteCar}
+                  onEdit={handleOpenEditModal}
                 />
               ))}
             </section>
@@ -205,16 +228,17 @@ export default function App() {
         </div>
       </main>
 
-      {/* Modal de Cadastro de Entrada na Garagem */}
+      {/* Modal de Cadastro / Edição de Veículo */}
       <CarFormModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateCar}
+        onClose={handleCloseModal}
+        onSubmit={handleSaveCar}
+        carToEdit={editingCar}
       />
 
       {/* Footer */}
       <footer className="app-footer">
-        <p>Gusta Motors &copy; 2026 — Gestão Inteligente de Garagem & Estacionamento (Tarifa R$ 5,00/h)</p>
+        <p>Gusta Motors &copy; 2026 — Gestão Inteligente de Garagem & Estacionamento (Tarifa R$ 11,80/h)</p>
       </footer>
     </div>
   );

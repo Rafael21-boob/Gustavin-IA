@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import carRoutes from './routes/carRoutes.js';
-import { isConnected } from './config/db.js';
+import { isConnected, hasValidMongoUri } from './config/db.js';
 
 const app = express();
 
@@ -12,9 +12,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Middlewares para parsing de requisições
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Middlewares para parsing de requisições com suporte a upload de imagens em Base64
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // Rota de Healthcheck / Status
 const healthHandler = (req, res) => {
@@ -22,7 +22,7 @@ const healthHandler = (req, res) => {
     status: 'ok',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    database: process.env.MONGODB_URI ? (isConnected() ? 'connected' : 'connecting/ready') : 'mock-mode',
+    database: hasValidMongoUri() ? (isConnected() ? 'connected' : 'connecting/ready') : 'mock-mode',
   });
 };
 

@@ -27,11 +27,22 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
+export function hasValidMongoUri() {
+  const uri = process.env.MONGODB_URI;
+  return Boolean(
+    uri && 
+    !uri.includes('<usuario>') && 
+    !uri.includes('<cluster>') && 
+    !uri.includes('<senha>') && 
+    (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))
+  );
+}
+
 export async function connectDB() {
   const uri = process.env.MONGODB_URI;
 
-  if (!uri) {
-    console.warn('⚠️ AVISO: MONGODB_URI não foi definida nas variáveis de ambiente.');
+  if (!hasValidMongoUri()) {
+    console.warn('⚠️ AVISO: MONGODB_URI não foi definida ou contém placeholders.');
     console.warn('ℹ️ A API operará em modo de simulação em memória (Mock Mode) para testes locais.');
     return null;
   }

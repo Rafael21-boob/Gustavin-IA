@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import Car from '../models/Car.js';
-import { connectDB } from '../config/db.js';
+import { connectDB, hasValidMongoUri } from '../config/db.js';
 
-const TARIFA_HORA = 5.0; // R$ 5,00 por hora de estacionamento
+const TARIFA_HORA = 11.80; // R$ 11,80 por hora de estacionamento
 
 // Base de dados em memória inicial para fallback e testes locais
 let mockCars = [
@@ -11,8 +11,8 @@ let mockCars = [
     marca: 'Porsche',
     modelo: '911 Carrera S',
     horas: 3,
-    valorTotal: 15.0,
-    preco: 15.0,
+    valorTotal: 35.4,
+    preco: 35.4,
     foto: 'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=800&q=80',
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date(Date.now() - 86400000).toISOString(),
@@ -22,8 +22,8 @@ let mockCars = [
     marca: 'Toyota',
     modelo: 'Corolla Altis Hybrid',
     horas: 5,
-    valorTotal: 25.0,
-    preco: 25.0,
+    valorTotal: 59.0,
+    preco: 59.0,
     foto: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=800&q=80',
     createdAt: new Date(Date.now() - 43200000).toISOString(),
     updatedAt: new Date(Date.now() - 43200000).toISOString(),
@@ -33,8 +33,8 @@ let mockCars = [
     marca: 'BMW',
     modelo: 'M3 Competition',
     horas: 8,
-    valorTotal: 40.0,
-    preco: 40.0,
+    valorTotal: 94.4,
+    preco: 94.4,
     foto: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=800&q=80',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -51,7 +51,7 @@ function generateMockId() {
  */
 export async function getCars(req, res, next) {
   try {
-    if (process.env.MONGODB_URI) {
+    if (hasValidMongoUri()) {
       await connectDB();
       const cars = await Car.find().sort({ createdAt: -1 });
       return res.status(200).json(cars);
@@ -72,7 +72,7 @@ export async function getCarById(req, res, next) {
   try {
     const { id } = req.params;
 
-    if (process.env.MONGODB_URI) {
+    if (hasValidMongoUri()) {
       await connectDB();
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -101,14 +101,14 @@ export async function getCarById(req, res, next) {
 
 /**
  * POST /api/cars
- * Cadastra um novo carro na garagem com cálculo automático do valor total (horas * 5)
+ * Cadastra um novo carro na garagem com cálculo automático do valor total (horas * 11.80)
  */
 export async function createCar(req, res, next) {
   try {
     const { marca, modelo, horas, preco, foto } = req.body;
 
     // Suporta 'horas' diretamente ou deriva de 'preco' para compatibilidade
-    const tempoHoras = horas !== undefined && horas !== null ? Number(horas) : (preco !== undefined ? Number(preco) / TARIFA_HORA : null);
+    const tempoHoras = horas !== undefined && horas !== null ? Number(horas) : (preco !== undefined ? Number((Number(preco) / TARIFA_HORA).toFixed(2)) : null);
 
     if (!marca || !modelo || tempoHoras === null || !foto) {
       return res.status(400).json({
@@ -122,9 +122,9 @@ export async function createCar(req, res, next) {
       });
     }
 
-    const valorCalculado = tempoHoras * TARIFA_HORA;
+    const valorCalculado = Number((tempoHoras * TARIFA_HORA).toFixed(2));
 
-    if (process.env.MONGODB_URI) {
+    if (hasValidMongoUri()) {
       await connectDB();
       const newCar = await Car.create({
         marca: marca.trim(),
@@ -182,7 +182,7 @@ export async function updateCar(req, res, next) {
           error: 'Erro de validação: as horas devem ser um número válido maior ou igual a zero.',
         });
       }
-      valorCalculado = tempoHoras * TARIFA_HORA;
+      valorCalculado = Number((tempoHoras * TARIFA_HORA).toFixed(2));
     } else if (preco !== undefined) {
       const precoNumber = Number(preco);
       if (isNaN(precoNumber) || precoNumber < 0) {
@@ -190,11 +190,11 @@ export async function updateCar(req, res, next) {
           error: 'Erro de validação: o preço deve ser um número válido maior ou igual a zero.',
         });
       }
-      valorCalculado = precoNumber;
-      tempoHoras = valorCalculado / TARIFA_HORA;
+      valorCalculado = Number(precoNumber.toFixed(2));
+      tempoHoras = Number((valorCalculado / TARIFA_HORA).toFixed(2));
     }
 
-    if (process.env.MONGODB_URI) {
+    if (hasValidMongoUri()) {
       await connectDB();
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -231,7 +231,7 @@ export async function updateCar(req, res, next) {
 
     const existing = mockCars[index];
     const updatedHoras = tempoHoras !== undefined ? tempoHoras : existing.horas;
-    const updatedValor = valorCalculado !== undefined ? valorCalculado : (existing.valorTotal || updatedHoras * TARIFA_HORA);
+    const updatedValor = valorCalculado !== undefined ? valorCalculado : (existing.valorTotal || Number((updatedHoras * TARIFA_HORA).toFixed(2)));
 
     mockCars[index] = {
       ...existing,
@@ -262,7 +262,7 @@ export async function deleteCar(req, res, next) {
   try {
     const { id } = req.params;
 
-    if (process.env.MONGODB_URI) {
+    if (hasValidMongoUri()) {
       await connectDB();
 
       if (!mongoose.Types.ObjectId.isValid(id)) {

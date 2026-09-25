@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const TARIFA_HORA = 5.0; // R$ 5,00 por hora
+const TARIFA_HORA = 11.80; // R$ 11,80 por hora
 
 const CarSchema = new mongoose.Schema(
   {
@@ -23,7 +23,7 @@ const CarSchema = new mongoose.Schema(
       type: Number,
       required: true,
       default: function () {
-        return (this.horas || 0) * TARIFA_HORA;
+        return Number(((this.horas || 0) * TARIFA_HORA).toFixed(2));
       },
     },
     preco: {
